@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaPulse - AniList Live Reader & Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 bg-[#111420]/90 backdrop-blur-md border-b border-slate-800/80 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchNav('discover')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                        <i class="fa-solid fa-book-open text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Manga<span class="text-blue-500">Pulse</span></span>
+                        <span class="hidden sm:inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 ml-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">AniList API</span>
+                    </div>
+                </div>
+
+                <!-- Central Navigation -->
+                <nav class="hidden md:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                    <button id="nav-discover" onclick="switchNav('discover')" class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-blue-600 transition-all shadow-md shadow-blue-600/20">
+                        <i class="fa-solid fa-compass"></i> Discover
+                    </button>
+                    <button id="nav-library" onclick="switchNav('library')" class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                        <i class="fa-solid fa-bookmark"></i> My Library <span id="library-count-badge" class="ml-1 px-1.5 py-0.2 text-xs bg-slate-800 rounded-full text-slate-300">0</span>
+                    </button>
+                </nav>
+
+                <!-- Search Input -->
+                <div class="flex items-center gap-3">
+                    <div class="relative w-48 sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                        <input type="text" id="global-search" oninput="handleSearchInput(this.value)" placeholder="Search AniList manga..." class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation bar -->
+        <div class="flex md:hidden border-t border-slate-800 bg-[#111420] px-4 py-2 justify-around">
+            <button id="mob-nav-discover" onclick="switchNav('discover')" class="flex items-center gap-2 text-sm font-medium text-blue-400">
+                <i class="fa-solid fa-compass"></i> Discover
+            </button>
+            <button id="mob-nav-library" onclick="switchNav('library')" class="flex items-center gap-2 text-sm font-medium text-slate-400">
+                <i class="fa-solid fa-bookmark"></i> My Library (<span id="mob-library-count">0</span>)
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- VIEW 1: DISCOVER CATALOG -->
+        <section id="view-discover" class="space-y-6">
+            
+            <!-- Filters & Controls Bar -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[#111420] p-4 rounded-xl border border-slate-800">
+                
+                <!-- Format Filter Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                    <button onclick="setFormatFilter('MANGA')" id="filter-fmt-manga" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white whitespace-nowrap transition-all">All Manga</button>
+                    <button onclick="setFormatFilter('NOVEL')" id="filter-fmt-novel" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition-all">Light Novels</button>
+                    <button onclick="setFormatFilter('ONE_SHOT')" id="filter-fmt-oneshot" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition-all">One Shots</button>
+                </div>
+
+                <!-- Genre Selector & Sorting -->
+                <div class="flex items-center gap-3">
+                    <select id="genre-select" onchange="fetchMangaData()" class="bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="">All Genres</option>
+                        <option value="Action">Action</option>
+                        <option value="Adventure">Adventure</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Drama">Drama</option>
+                        <option value="Fantasy">Fantasy</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Mystery">Mystery</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                        <option value="Slice of Life">Slice of Life</option>
+                        <option value="Supernatural">Supernatural</option>
+                    </select>
+
+                    <select id="sort-select" onchange="fetchMangaData()" class="bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="TRENDING_DESC">Trending Now</option>
+                        <option value="POPULARITY_DESC">Most Popular</option>
+                        <option value="SCORE_DESC">Highest Rated</option>
+                        <option value="FAVOURITES_DESC">Most Favorites</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Loading Spinner State -->
+            <div id="loading-state" class="hidden text-center py-24">
+                <div class="inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-sm text-slate-400">Fetching live entries from AniList API...</p>
+            </div>
+
+            <!-- Manga Grid Container -->
+            <div id="manga-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+                <!-- Populated dynamically via API -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="no-results" class="hidden text-center py-16 bg-slate-900/40 rounded-2xl border border-slate-800/80">
+                <i class="fa-solid fa-ghost text-4xl text-slate-600 mb-3"></i>
+                <h3 class="text-lg font-semibold text-slate-300">No series found</h3>
+                <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1">Try adjusting your search query or sorting options.</p>
+            </div>
+        </section>
+
+        <!-- VIEW 2: PERSONAL LIBRARY -->
+        <section id="view-library" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Personal Library</h2>
+                    <p class="text-sm text-slate-400">Track reading progress and manage your custom local reading lists.</p>
+                </div>
+            </div>
+
+            <!-- Library Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto border-b border-slate-800 pb-2">
+                <button onclick="switchLibraryTab('reading')" id="tab-reading" class="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white whitespace-nowrap transition-all">
+                    Reading (<span id="count-reading">0</span>)
+                </button>
+                <button onclick="switchLibraryTab('favorites')" id="tab-favorites" class="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition-all">
+                    Favorites (<span id="count-favorites">0</span>)
+                </button>
+                <button onclick="switchLibraryTab('plan')" id="tab-plan" class="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition-all">
+                    Plan to Read (<span id="count-plan">0</span>)
+                </button>
+                <button onclick="switchLibraryTab('completed')" id="tab-completed" class="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 whitespace-nowrap transition-all">
+                    Completed (<span id="count-completed">0</span>)
+                </button>
+            </div>
+
+            <!-- Library Grid -->
+            <div id="library-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Rendered dynamically from LocalStorage + Cache -->
+            </div>
+
+            <!-- Empty Library State -->
+            <div id="empty-library" class="hidden text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800/80">
+                <i class="fa-solid fa-folder-open text-4xl text-slate-600 mb-3"></i>
+                <h3 class="text-lg font-semibold text-slate-300">Your list is currently empty</h3>
+                <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-4">Explore the discover tab to add titles to your personal reading tracker.</p>
+                <button onclick="switchNav('discover')" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-500 transition-all">
+                    Browse Discover Catalog
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MANGA DETAILS MODAL -->
+    <div id="details-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="relative bg-[#111420] border border-slate-800 rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl my-8">
+            
+            <button onclick="closeDetailsModal()" class="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-900/80 text-slate-300 hover:text-white border border-slate-700 flex items-center justify-center transition-all">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Banner Backdrop -->
+            <div class="relative h-48 sm:h-56 w-full bg-slate-800">
+                <img id="modal-banner" src="" alt="Banner" class="w-full h-full object-cover opacity-40">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#111420] via-[#111420]/40 to-transparent"></div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="relative px-6 pb-6 pt-0 -mt-20">
+                <div class="flex flex-col sm:flex-row gap-6 items-start">
+                    
+                    <img id="modal-cover" src="" alt="Cover" class="w-36 h-52 object-cover rounded-xl border-2 border-slate-700 shadow-xl shrink-0 mx-auto sm:mx-0">
+                    
+                    <div class="space-y-3 flex-grow w-full">
+                        <div class="flex items-center gap-2">
+                            <span id="modal-format" class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">MANGA</span>
+                            <span id="modal-status" class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Ongoing</span>
+                            <div class="ml-auto flex items-center gap-1 text-amber-400 text-sm font-bold">
+                                <i class="fa-solid fa-star"></i>
+                                <span id="modal-rating">0.0</span>
+                            </div>
+                        </div>
+
+                        <h2 id="modal-title" class="text-2xl sm:text-3xl font-extrabold text-white">Title</h2>
+                        <p id="modal-chapters-info" class="text-xs text-slate-400">Chapters: Unknown</p>
+
+                        <div id="modal-genres" class="flex flex-wrap gap-1.5 pt-1"></div>
+
+                        <div class="flex flex-wrap items-center gap-2 pt-2">
+                            <select id="modal-status-select" onchange="updateUserStatus(this.value)" class="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                                <option value="none">+ Add to Library</option>
+                                <option value="reading">Currently Reading</option>
+                                <option value="plan">Plan to Read</option>
+                                <option value="completed">Completed</option>
+                            </select>
+
+                            <button id="modal-fav-btn" onclick="toggleFavorite()" class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-rose-400 transition-all flex items-center gap-1.5">
+                                <i class="fa-regular fa-heart"></i> Favorite
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Synopsis -->
+                <div class="mt-6 space-y-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Synopsis</h3>
+                    <div id="modal-synopsis" class="text-sm text-slate-300 leading-relaxed bg-slate-900/50 p-3.5 rounded-xl border border-slate-800/80 max-h-40 overflow-y-auto">Description goes here...</div>
+                </div>
+
+                <!-- Chapters List Previewer -->
+                <div class="mt-6 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Chapters List (<span id="modal-chapter-count">0</span>)</h3>
+                        <span class="text-xs text-slate-500">Click to start reading</span>
+                    </div>
+
+                    <div id="modal-chapter-list" class="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAPTER READER OVERLAY MODAL -->
+    <div id="reader-modal" class="fixed inset-0 z-50 bg-[#0b0c10] hidden flex flex-col">
+        
+        <div class="h-14 bg-[#111420] border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="closeReader()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div class="truncate">
+                    <h4 id="reader-title" class="text-sm font-bold text-white truncate">Title Name</h4>
+                    <p id="reader-chapter-name" class="text-xs text-slate-400">Chapter 1</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="reader-layout-btn" onclick="toggleReaderMode()" class="px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrows-up-down"></i> <span id="reader-mode-label" class="hidden sm:inline">Webtoon Scroll</span>
+                </button>
+
+                <button onclick="cycleReaderTheme()" class="p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-palette"></i>
+                </button>
+
+                <select id="reader-chapter-select" onchange="switchReaderChapter(this.value)" class="bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none">
+                </select>
+            </div>
+        </div>
+
+        <div id="reader-viewport" class="flex-grow overflow-y-auto p-2 sm:p-6 flex flex-col items-center gap-2 reader-dark">
+        </div>
+
+        <div id="reader-flip-footer" class="hidden h-14 bg-[#111420] border-t border-slate-800 px-4 flex items-center justify-between shrink-0">
+            <button onclick="prevFlipPage()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-white">
+                <i class="fa-solid fa-chevron-left mr-1"></i> Prev Page
+            </button>
+            <span id="reader-page-indicator" class="text-xs text-slate-400 font-medium">Page 1 / 1</span>
+            <button onclick="nextFlipPage()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-white">
+                Next Page <i class="fa-solid fa-chevron-right ml-1"></i>
+            </button>
+        </div>
+        <footer class="py-4 text-center text-xs text-slate-500">This is an unofficial community project powered by the AniList API and is not affiliated with, endorsed, or sponsored by AniList.</footer>
+    </div>
+    <!-- ANILIST API & CLIENT LOGIC -->
+    <script src="script.js"></script>
+</body>
+</html>
